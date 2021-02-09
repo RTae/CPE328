@@ -3,7 +3,7 @@
 # Course Syllabus
 
 <a href="https://github.com/RTae/CPE328/blob/main/CPE328-Syllabus-2_2020.pdf">
-<img src="https://stanford.edu/~shervine/teaching/cs-230/illustrations/cover/en-001.png?" alt="Illustration" width="1024px"/></a>
+<img src="https://raw.githubusercontent.com/RTae/CPE328/main/cover.jpeg?" alt="Illustration" width="1024px"/></a>
 
 # Lectures
 :pushpin: **Week1** : Introduction to Embedded System
