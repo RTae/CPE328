@@ -3,7 +3,7 @@
 # Course Syllabus
 
 <a href="https://github.com/RTae/CPE328/blob/main/CPE328-Syllabus-2_2020.pdf">
-<img src="https://raw.githubusercontent.com/RTae/CPE328/main/cover.jpeg?" alt="Illustration" width="640px"/></a>
+<img src="https://raw.githubusercontent.com/RTae/CPE328/main/cover.jpeg?" alt="Illustration" width="320px"/></a>
 
 # Lectures
 :pushpin: **Week1** : Introduction to Embedded System
