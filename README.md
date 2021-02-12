@@ -15,5 +15,5 @@
 :pushpin: **Week3** : USART And Parallel communication
   - :electric_plug:**Lab** : AVR USART & Parallel communication
   
-:pushpin: **Week4** : ADC and Analog Caompator
-  - :electric_plug:**Lab** : AVR USART & Parallel communication
+:pushpin: **Week4** : SPI communication
+  - :electric_plug:**Lab** : SPI communication
