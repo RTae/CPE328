@@ -13,94 +13,94 @@
 
 
 void USART_Init(unsigned int ubrr) {
-		UBRR0 = ubrr;
-		UCSR0B |= (1 << RXEN0) | (1 << TXEN0);
-		UCSR0C |= (1 << UCSZ01) | (1 << UCSZ00);
+	UBRR0 = ubrr;
+	UCSR0B |= (1 << RXEN0) | (1 << TXEN0);
+	UCSR0C |= (1 << UCSZ01) | (1 << UCSZ00);
 }
 
 void USART_Transmit( unsigned char data ) {
-		while ( !( UCSR0A & (1 << UDRE0)) );
-		UDR0 = data;
+	while ( !( UCSR0A & (1 << UDRE0)) );
+	UDR0 = data;
 }
 
 void print(unsigned char *buffer) {
-		for(int i=0; buffer[i] != 0; i++){
-				USART_Transmit(buffer[i]);
-		}
+	for(int i=0; buffer[i] != 0; i++){
+			USART_Transmit(buffer[i]);
+	}
 }
 
 void SPI_Init()
 {		
-		/* set MOSI CLK CS as Output*/
-		DDRB |= (1 << CS_DDR) | (1 << CLK) | (1 << MOSI);
-		// Chip select high
-		PORTB |= (1 << CS);
-		// Chip select low
-		PORTB &= ~(1 << CS);
-		/* Enable SPI, Master mode, clk/16 */
-		SPCR |= (1 << SPE) | (1 << MSTR) | (1 << SPR0);
+	/* set MOSI CLK CS as Output*/
+	DDRB |= (1 << CS_DDR) | (1 << CLK) | (1 << MOSI);
+	// Chip select high
+	PORTB |= (1 << CS);
+	// Chip select low
+	PORTB &= ~(1 << CS);
+	/* Enable SPI, Master mode, clk/16 */
+	SPCR |= (1 << SPE) | (1 << MSTR) | (1 << SPR0);
 }
 
 uint16_t SPI_READ()
 {
-		uint16_t high_byte;
-		uint16_t low_byte;
-		uint16_t out_12bits;
-		
-		PORTB &= ~(1 << CS);																						// Chip select low
+	uint16_t high_byte;
+	uint16_t low_byte;
+	uint16_t out_12bits;
+	
+	PORTB &= ~(1 << CS);																	// Chip select low
 
-		SPDR = 0xFF;																										// put dummy byte in SPDR
+	SPDR = 0xFF;																			// put dummy byte in SPDR
 
-		while(!(SPSR & (1<<SPIF)));																			// wait for SPIF high 
-		
-		/*xx0[B11][B10][B9][B8][B7]*/
-		high_byte = SPDR;																								// copy SPDR out
-				
-		SPDR = 0xFF;																										// put dummy byte in SPDR
+	while(!(SPSR & (1<<SPIF)));																// wait for SPIF high 
+	
+	/*xx0[B11][B10][B9][B8][B7]*/
+	high_byte = SPDR;																		// copy SPDR out
+			
+	SPDR = 0xFF;																			// put dummy byte in SPDR
 
-		while(!(SPSR & (1<<SPIF)));																			// wait for SPIF high			
-		
-		/*[B6][B5][B4][B3][B2][B1][B0][B1]*/
-		low_byte = SPDR;																								// copy SPDR out
-		
-		/*xx0[B11][B10][B9][B8][B7] 0		0		0		0		0		0		0		 0 */
-		/*																											OR */
-		/*000 0			0		 0	 0	0  [B6][B5][B4][B3][B2][B1][B0][B1]*/
-		/*---------------------------------------------------------*/
-		/*xx0[B11][B10][B9][B8][B7][B6][B5][B4][B3][B2][B1][B0][B1]*/
-		out_12bits = (high_byte << 8) | low_byte;												// Concatenate bit
-		
-		/*[B11][B10][B9][B8][B7][B6][B5][B4][B3][B2][B1][B0][B1]000*/
-		out_12bits <<= 3;																								// Shift left 3
-		
-		/*0000[B11][B10][B9][B8][B7][B6][B5][B4][B3][B2][B1][B0]*/
-		out_12bits >>= 4;																								// Shift right 4
-		
-		PORTB |= (1 << CS);																							// Chip select high
+	while(!(SPSR & (1<<SPIF)));																// wait for SPIF high			
+	
+	/*[B6][B5][B4][B3][B2][B1][B0][B1]*/
+	low_byte = SPDR;																		// copy SPDR out
+	
+	/*xx0[B11][B10][B9][B8][B7]	0	0	0	0	0	0	0	 0 */
+	/*														OR */
+	/*000 0		0	0	0	0  [B6][B5][B4][B3][B2][B1][B0][B1]*/
+	/*---------------------------------------------------------*/
+	/*xx0[B11][B10][B9][B8][B7][B6][B5][B4][B3][B2][B1][B0][B1]*/
+	out_12bits = (high_byte << 8) | low_byte;												// Concatenate bit
+	
+	/*[B11][B10][B9][B8][B7][B6][B5][B4][B3][B2][B1][B0][B1]000*/
+	out_12bits <<= 3;																		// Shift left 3
+	
+	/*0000[B11][B10][B9][B8][B7][B6][B5][B4][B3][B2][B1][B0]*/
+	out_12bits >>= 4;																		// Shift right 4
+	
+	PORTB |= (1 << CS);																		// Chip select high
 
-		return out_12bits;
+	return out_12bits;
 }
 
 int main(void) {
 
-		USART_Init(53);                                                 // SPI intial
-		SPI_Init();                                                     // USART initial
+	USART_Init(53);                                                 						// SPI intial
+	SPI_Init();                                                     						// USART initial
 
-		uint16_t sensor;
-		float temp;
-		unsigned char text[] = "Temperature = ";
-		unsigned char buffer[10];
+	uint16_t sensor;
+	float temp;
+	unsigned char text[] = "Temperature = ";
+	unsigned char buffer[10];
 
-		while (1) {
-				sensor = SPI_READ();								                         // Read data from sensor
-				temp = (((sensor/4096.0) * 5.0) - 0.5) * 100.0 ;             // Convert Analog value to temperature
-				
-				dtostrf(temp, 3, 2, buffer);                                 // Convert Float to string
-				strcat(buffer, " °C\n");                                     // Concatenate unit 
-				
-				print(text);                                                 // Print First Text
-				print(buffer);                                               // Print temperature and unit
+	while (1) {
+			sensor = SPI_READ();								                        // Read data from sensor
+			temp = (((sensor/4096.0) * 5.0) - 0.5) * 100.0 ;             				// Convert Analog value to temperature
+			
+			dtostrf(temp, 3, 2, buffer);                                	 			// Convert Float to string
+			strcat(buffer, " °C\n");                                     				// Concatenate unit 
+			
+			print(text);                                                 				// Print First Text
+			print(buffer);                                               				// Print temperature and unit
 
-				_delay_ms(1000);
-		}
+			_delay_ms(1000);
+	}
 }
