@@ -95,7 +95,7 @@ int main(void) {
     while (1) {
         sensor = SPI_READ();             // Read data from sensor
         
-        // temp = (((sensor/4096.0) * 5.0) - 0.5) * 100.0 ;
+        temp = (((sensor/4096.0) * 5.0) - 0.5) * 100.0 ;
         
         dtostrf(temp, 3, 2, buffer);
         strcat(buffer, " °C\n");
