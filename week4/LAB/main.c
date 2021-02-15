@@ -71,14 +71,14 @@ int main(void) {
     SPI_Init();
 
     uint16_t sensor;
-    uint16_t temp;
+    // uint16_t temp;
     unsigned char text[] = "Temp = ";
     unsigned char buffer[10];
 
     while (1) {
         sensor = SPI_READ();             // Read data from sensor
         
-        temp = ((sensor/4095.0) * 5.0 - 0.5) * 100.0;
+       //  temp = ((sensor/4095.0) * 5.0 - 0.5) * 100.0;
         
         sprintf(buffer,"%u",sensor);     // convert to string
         strcat(buffer, "\n");
