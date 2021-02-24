@@ -10,23 +10,7 @@
 #define LCD_Port PORTB			/* Define LCD data port */
 #define RS PB0				    /* Define Register Select pin */
 #define EN PB1 				    /* Define Enable signal pin */
-
-void USART_Init(unsigned int ubrr) {
-    UBRR0 = ubrr;
-    UCSR0B |= (1 << RXEN0) | (1 << TXEN0);
-    UCSR0C |= (1 << UCSZ01) | (1 << UCSZ00);
-}
-
-void USART_Transmit( unsigned char data ) {
-    while ( !( UCSR0A & (1 << UDRE0)) );
-    UDR0 = data;
-}
-
-void print(unsigned char *buffer) {
-    for(int i=0; buffer[i] != 0; i++){
-        USART_Transmit(buffer[i]);
-    }
-}
+#define DS1307_ADDR 0xD0        /* Define DS1307 Address */
 
 void LCD_Command( unsigned char cmnd )
 {
@@ -93,51 +77,165 @@ void LCD_Clear()
 	LCD_Command (0x80);		/* Cursor at home position */
 }
 
-void ADC_Init(){
-    ADMUX  |= (1 << REFS0) | (1 << MUX2) | (1 << MUX0);           // Select the ADC channel and AVCC as Ref voltage
-    ADCSRA |= (1 << ADEN) |(1<<ADPS2) | (1<<ADPS1);               // Select ADC Prescalar to 64 
-    DIDR0 |= (1 << ADC5D);
+/* Terms
+ * S = Start
+ * SR = Repeated Start
+ * P = Stop
+ * SLA+W = Slave Address Write mode
+ * SLA+R = Slave Address Read mode
+ * ACK = Acknowledge
+ * NACK = Not ACK
+ */
+
+void I2C_Init()
+{
+  //SCL, SDA as output
+  DDRC |= (1 << DDC4) | (1 << DDC5);
+  
+  //init I2C
+  //100kHz @ prescaler /4
+  TWBR = 8;
+  TWCR |= (1 << TWPS0);
+
+  //enable I2C
+  TWCR |= (1 << TWEN);
 }
 
-uint16_t ADC_Read(){
-    
-    ADCSRA |= (1<<ADSC);                    // Enable ADC and Start the conversion
-    
-    while( !(ADCSRA & (1<<ADIF)) );         // Wait for interrupt
+void I2C_Start(){
+  //send S
+  TWCR = (1 << TWEN) | (1 << TWINT) | (1 << TWSTA);
+  //wait complete then check status
+  while(!(TWCR & (1 << TWINT)));
+}
 
-    uint16_t d_out = ADC;                   // Copt ADC out already concatenate ADCL ADCH
-    ADCSRA |= (1<<ADIF);                    // Clear Flag
-    return d_out;                           // Return value
+void I2C_Stop(){
+    TWCR = (1 << TWEN) | (1 << TWINT) | (1 << TWSTO);
+}
+
+void I2C_Write(uint8_t data){
+  TWDR = data;
+  TWCR = (1 << TWEN) | (1 << TWINT);
+  //wait complete then check status
+  while(!(TWCR & (1 << TWINT)));
+  if((TWSR & 0xF8) != 0x18)
+    return 2;
+}
+
+uint8_t I2C_ReadAck() {
+    TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWEA);
+    while (!(TWCR & (1<<TWINT)));
+    return TWDR;
+}
+
+uint8_t I2C_ReadNAck() {
+    TWCR = (1<<TWINT)|(1<<TWEN);
+    while (!(TWCR & (1<<TWINT)));
+    return TWDR;
+}
+
+uint8_t I2C_GetStatusCode() {
+    uint8_t status;
+    status = TWSR & 0xF8;
+    return status;
+}
+
+void dateFormat(char *dateBuffer, uint8_t day, uint8_t date, uint8_t month, uint8_t year){
+    char dict_day[7][5] = {"Mon", "Tue", "Wed", "Thr", "Fri", "Sat", "Sun"};
+    char dict_month[12][5] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",};
+    
+    char temp[10];
+    
+    strcat(dateBuffer, dict_day[day]);
+    strcat(dateBuffer, " ");
+    sprintf(temp, "%u", date);
+    strcat(dateBuffer, temp);
+    strcat(dateBuffer, " ");
+    strcat(dateBuffer, dict_month[month]);
+    strcat(dateBuffer, " ");
+    sprintf(temp, "20%u\n", year);
+    strcat(dateBuffer, temp);
+}
+
+void readTimeDS1307() {
+    I2C_Start();
+    if(I2C_GetStatusCode() != 0x08) I2C_Stop();
+
+    I2C_Write((uint8_t)(DS1307_ADDR));
+    if (I2C_GetStatusCode() != 0x18) I2C_Stop();
+    
+    I2C_Write((uint8_t) 0x00);
+    if (I2C_GetStatusCode() != 0x28) I2C_Stop();
+
+    I2C_Start();
+    if(I2C_GetStatusCode() != 0x10) I2C_Stop();
+
+    I2C_Write((uint8_t)(DS1307_ADDR + 1));
+    if (I2C_GetStatusCode() != 0x40) I2C_Stop();
+    
+    uint8_t temp[7];
+    for(int i=0; i < 8; i++){ 
+        temp[i] = I2C_ReadAck();
+        if (I2C_GetStatusCode() != 0x50) I2C_Stop();
+        
+        if(i == 7){
+            temp[i] = I2C_ReadNAck();
+            if (I2C_GetStatusCode() != 0x58) I2C_Stop();
+        }
+    }
+
+    I2C_Stop();
+    
+    uint8_t second = ((temp[0] & 0x70) >> 4) * 10 + (temp[0] & 0x0F);
+    uint8_t minute = ((temp[1] & 0x70) >> 4) * 10 + (temp[1] & 0x0F);
+    uint8_t hour = ((temp[2] & 0x70) >> 4) * 10 + (temp[2] & 0x0F);
+    uint8_t day = (temp[3] & 0x0F);
+    uint8_t date = ((temp[4] & 0x70) >> 4) * 10 + (temp[4] & 0x0F);
+    uint8_t month = ((temp[5] & 0x70) >> 4) * 10 + (temp[5] & 0x0F);
+    uint8_t year = ((temp[6] & 0x70) >> 4) * 10 + (temp[6] & 0x0F);
+    
+    char timeBuffer[10];
+    char dateBuffer[20] = "";
+    sprintf(timeBuffer, "%.2u:%.2u:%.2u\n", hour, minute, second);
+    dateFormat(dateBuffer, day, date, month, year);
+    
+    LCD_Clear();
+    LCD_String(dateBuffer);
+    LCD_Command (0xC0);
+    LCD_String(timeBuffer);
+    _delay_ms(1000);
+}
+
+
+uint8_t setTimeDS1307(uint8_t *data){
+    I2C_Start();
+    if(I2C_GetStatusCode() != 0x08) I2C_Stop();
+
+    I2C_Write((uint8_t)(DS1307_ADDR));
+    if (I2C_GetStatusCode() != 0x18) I2C_Stop();
+
+    I2C_Write((uint8_t)(0x00));
+    if (I2C_GetStatusCode() != 0x28) I2C_Stop();
+
+    for(int i=0; i < 8; i++){
+      I2C_Write((uint8_t)(data[i]));
+      if (I2C_GetStatusCode() != 0x28) I2C_Stop();
+    }
+    I2C_Stop();
 }
 
 int main(void) {
-
-    USART_Init(53);         /* Initialization of USART*/
-    ADC_Init();             /* Initialization of ADC*/
-	LCD_Init();             /* Initialization of LCD*/
+    I2C_Init();             /* Initialization of I2C*/
+    LCD_Init();             /* Initialization of LCD*/
     LCD_Clear();
-    _delay_ms(1000);
+    _delay_ms(1000);   
     
-    uint16_t sensor;
-    float temp;
-    unsigned char text[] = "Temp = ";
-    unsigned char buffer[10];
-
+    /* Second, Minute, Hour, Day, Date, Month, Year*/
+    uint8_t timeInit[] = {0x00, 0x36, 0x19, 0x02, 0x24, 0x01, 0x21};
+    
+    setTimeDS1307(timeInit);
+    
     while (1) {
-        sensor = ADC_Read();          /* Read data from sensor */
-        temp = (((sensor/1024.0) * 5) - 0.5) * 100.0 ;
-        
-        dtostrf(temp, 4, 2, buffer);
-        strcat(buffer, " C\n");
-        
-        print(text);
-        print(buffer);
-        
-        LCD_Clear();          // Clear LCD
-        _delay_ms(100); 
-        LCD_String(text);     // Sent Message
-        LCD_String(buffer);
-
-        _delay_ms(1000);
+        readTimeDS1307();
     }
 }
