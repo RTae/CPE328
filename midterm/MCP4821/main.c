@@ -42,7 +42,7 @@ void writeMCP4821(int16_t data){
 int main(void) {
     SPI_Init();
     while (1) {
-        uint16_t x = 1000; // mV
+        uint16_t x = 3500; // mV
         writeMCP4821(x);
         _delay_ms(1000);
     }
