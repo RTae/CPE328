@@ -7,17 +7,17 @@
 #define LEB PB1
 
 void init_timer1(uint16_t count){
-    TCCR1A |= (1 << COM1A0);
-    TCCR1B |= (1 << WGM12) | (1 << CS12);
+    TCCR1A |= (1 << COM1A0);               // Open toggle mode on OC1A/OC1B
+    TCCR1B |= (1 << WGM12) | (1 << CS12);  // Set CTC mode and clk/256
     OCR1A = count;
 }
 
 void start_timer1(){
-    TCCR1B |= (1 << CS12);
+    TCCR1B |= (1 << CS12);     // Set clk/256
 }
 
 void stop_timer1(){
-    TCCR1B &= ~(1 << CS12);
+    TCCR1B &= ~(1 << CS12);    // No clock source
 }
 
 int main(void) {
@@ -27,9 +27,12 @@ int main(void) {
     PORTB &= ~(1 << LEB);
     
     int flag = 0;
+
+    /* Init Timer  */
     init_timer1(31250);
     
     while (1) {
+        /* Button push for toggle  */
         if((PIND & (1 << BUTTON)) == 0) {
             if(flag)
                 flag = 0;
@@ -42,6 +45,7 @@ int main(void) {
             _delay_ms(10);
         }
         
+        /* Toggle start or stop timer  */
         if(flag){
             start_timer1();
         } else{
