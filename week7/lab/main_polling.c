@@ -29,7 +29,7 @@ int main(void) {
     int flag = 0;
 
     /* Init Timer  */
-    init_timer1(31250);
+    init_timer1(15624); // 15624  = ((8000000)/(256*2)) - 1
     
     while (1) {
         /* Button push for toggle  */

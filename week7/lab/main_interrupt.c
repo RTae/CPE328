@@ -46,7 +46,7 @@ int main(void) {
     PORTB &= ~(1 << LEB);
 
     /* Init Timer */
-    init_timer1(31250);
+    init_timer1(15624); // 15624  = ((8000000)/(256*2)) - 1
     
     /* Init Interrupt */
     init_int0();
