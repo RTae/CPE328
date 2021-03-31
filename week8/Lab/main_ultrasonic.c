@@ -81,6 +81,40 @@ void TIMER1_Init() {
     TCCR1B |= (1 << ICNC1) | (1 << CS11);
 }
 
+uint16_t read_ultrasonic(){
+      //phase 1: start
+      ////trig high
+      PORTB |= (1 << TRI_PIN);
+      //delay 10 us
+      _delay_us(10);
+
+      //trig low
+      PORTB &= ~(1 << TRI_PIN);
+      
+      //phase 2: capture wave rising
+      //set to capture rising edge
+      TCCR1B |= (1 << ICES1);
+      //check ICF1 high for capture event
+      while (!(TIFR1 & (1 << ICF1)));
+      //set TCNT1 to 0
+      TCNT1 = 0;
+      //reset ICF1 flag
+      TIFR1 |= (1 << ICF1);
+
+      //phase 3: capture wave falling
+      //set to capture falling edge
+      TCCR1B &= ~(1 << ICES1);
+      //check ICF1 high for capture event
+      while (!(TIFR1 & (1 << ICF1)));
+      TIFR1 |= (1 << ICF1);
+      //copy 16-bit data out from ICR1
+      uint16_t data = ICR1;
+      //reset ICF1 flag
+      TIFR1 |= (1 << ICF1);
+
+      return data
+}
+
 int main(void) {
     
     LCD_Init();             /* Initialization of LCD*/
@@ -93,36 +127,9 @@ int main(void) {
         
     char output_string[20] = {};
     while (1) {
-        //phase 1: start
-        //trig high
-        PORTB |= (1 << TRI_PIN);
-        //delay 10 us
-        _delay_us(10);
-        
-        //trig low
-        PORTB &= ~(1 << TRI_PIN);
-        
-        //phase 2: capture wave rising
-        //set to capture rising edge
-        TCCR1B |= (1 << ICES1);
-        //check ICF1 high for capture event
-        while (!(TIFR1 & (1 << ICF1)));
-        //set TCNT1 to 0
-        TCNT1 = 0;
-        //reset ICF1 flag
-        TIFR1 |= (1 << ICF1);
-        
-        //phase 3: capture wave falling
-        //set to capture falling edge
-        TCCR1B &= ~(1 << ICES1);
-        //check ICF1 high for capture event
-        while (!(TIFR1 & (1 << ICF1)));
-        TIFR1 |= (1 << ICF1);
-        //copy 16-bit data out from ICR1
-        uint16_t output_data = ICR1;
-        //reset ICF1 flag
-        
-        
+        // Read value from ultrasonic
+        uint16_t output_data = read_ultrasonic()
+
         //phase 4: convert and output
         //convert
         uint8_t distance = ((output_data / 1000000.0) * 340 * 100) / 2.0;
