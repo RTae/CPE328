@@ -6,22 +6,27 @@
 #include "task.h"
 #include "semphr.h"
 
+/* Create semaphore variable for take  */
 SemaphoreHandle_t xSemaphore;
 
+/* Interrupt handle when INT0 is interrupt*/
 ISR (INT0_vect){
     xSemaphoreGiveFromISR(xSemaphore, NULL);
     
 }
 
+/* Interrupt handle when INT1 is interrupt  */
 ISR (INT1_vect){
     xSemaphoreGiveFromISR(xSemaphore, NULL);
     
 }
 
+/* Slow led  */
 void buttonHandlerSlow(void* params){
     DDRB |= 0x0f;
     unsigned char led_state[4] = {0x01, 0x02, 0x04, 0x08};
     while(1){
+        /* Take semaphore */
         if (xSemaphoreTake(xSemaphore, portMAX_DELAY) == pdTRUE){
             for(int i=0; i < sizeof(led_state); i++){
                 PORTB |= led_state[i];
@@ -33,6 +38,7 @@ void buttonHandlerSlow(void* params){
     }
 }
 
+/* Fast led  */
 void buttonHandlerFast(void* params){
     DDRB |= 0xf0;
     unsigned char led_state[4] = {0x10, 0x20, 0x40, 0x80};
@@ -47,6 +53,7 @@ void buttonHandlerFast(void* params){
         }
     }
 }
+
 
 int main(void) {
     PORTD |= (1 << PORTD2) | (1 << PORTD3);
