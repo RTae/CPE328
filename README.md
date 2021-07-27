@@ -17,3 +17,21 @@
   
 :pushpin: **Week4** : SPI communication
   - :electric_plug:**Lab** : SPI communication
+
+:pushpin: **Week5** : ADC Analog to digital Convertor
+  - :electric_plug:**Lab** : ADC Programming
+
+:pushpin: **Week6** : I2C communication
+  - :electric_plug:**Lab** : I2C Programming
+
+:pushpin: **Week7** : Interrupt
+  - :electric_plug:**Lab** : Interrupt Programming
+
+:pushpin: **Week8** : Timer, Counter and Input capture
+  - :electric_plug:**Lab** : Timer with  Interrupt and Sona by using Input capture
+
+:pushpin: **Week9** : Hardware electronic and sleep mode in AVR
+  - :electric_plug:**Lab** : Sleep mode Programming
+
+:pushpin: **Week10** : Real time operation system (RTOS)
+  - :electric_plug:**Lab** : RTOS Programming
